@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package protocol;
+
+message RefreshTokenRequest {
+    string token = 1;
+    string tokenRefresh = 2;
+}
+
+message RefreshTokenResponse {
+    string token = 1;
+    string refreshToken = 2;
+}
+
+message SignInRequest {
+    string login = 1;
+    string password = 2;
+}
+
+message SignInResponse {
+    string token = 1;
+    string refreshToken = 2;
+}
+
+message SignUpRequest {
+    string login = 1;
+    string password = 2;
+}
+
+message SignUpResponse {
+    string Url = 1;
+}
+
+message DeleteRequest {
+    string login = 1;
+}
+
+message AddClaimsRequest {
+    string login = 1;
+    map<string, string > claims = 2;
+}
+
+message EmptyResponse {
+}
+
+message DeleteClaimsRequest {
+    string login = 1;
+    map<string, string> claims = 2;
+}
+
+message ValidateToken {
+    string token = 1;
+}
+
+service AuthService {
+    rpc SignIn (SignInRequest) returns (SignInResponse);
+    rpc SignUp (SignUpRequest) returns (SignUpResponse);
+    rpc DeleteClaims (DeleteClaimsRequest) returns (EmptyResponse);
+    rpc Delete (DeleteRequest) returns (EmptyResponse);
+    rpc AddClaims (AddClaimsRequest) returns (EmptyResponse);
+    rpc RefreshToken (RefreshTokenRequest) returns (RefreshTokenResponse);
+}

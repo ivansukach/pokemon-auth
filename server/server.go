@@ -6,5 +6,5 @@ import (
 
 //Server ...
 type Server struct {
-	ps service.UserService
+	ps service.Auth
 }
