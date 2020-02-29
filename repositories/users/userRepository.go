@@ -2,6 +2,7 @@ package users
 
 import (
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,10 +21,6 @@ func (ur *userRepository) Create(user *User) error {
 func (ur *userRepository) Get(login string) (*User, error) {
 	u := User{}
 	err := ur.db.QueryRowx("SELECT * FROM users WHERE Login=$1", login).StructScan(&u)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
 	return &u, err
 }
 func (ur *userRepository) Update(user *User) error {

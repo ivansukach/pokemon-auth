@@ -3,9 +3,14 @@ package service
 import (
 	"errors"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
+	"github.com/ivansukach/pokemon-auth/config"
+	"github.com/ivansukach/pokemon-auth/repositories/auth"
 	"github.com/ivansukach/pokemon-auth/repositories/claims"
 	"github.com/ivansukach/pokemon-auth/repositories/refreshToken"
 	"github.com/ivansukach/pokemon-auth/repositories/users"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -18,178 +23,98 @@ type Auth struct {
 func New(ur users.Repository, claims claims.Repository, refresh refreshToken.Repository) *Auth {
 	return &Auth{ur: ur, claims: claims, refresh: refresh}
 }
-func (gs *Auth) CreateUser(user *users.User) error {
-	return gs.ur.Create(user)
+func (as *Auth) CreateUser(user *users.User) error {
+	return as.ur.Create(user)
 }
-func (gs *Auth) UpdateUser(user *users.User) error {
-	return gs.ur.Update(user)
+func (as *Auth) UpdateUser(user *users.User) error {
+	return as.ur.Update(user)
 }
-func (gs *Auth) GetUser(login string) (*users.User, error) {
-	return gs.ur.Get(login)
+func (as *Auth) GetUser(login string) (*users.User, error) {
+	return as.ur.Get(login)
 }
-func (gs *Auth) DeleteUser(id string) error {
-	return gs.ur.Delete(id)
+func (as *Auth) DeleteUser(id string) error {
+	return as.ur.Delete(id)
 }
-func (gs *Auth) ListingUsers() ([]users.User, error) {
-	return gs.ur.Listing()
-}
-
-func (gs *Auth) DeleteClaims(claims map[string]string, login string) error {
-	return gs.claims.DeleteClaims(ctx, claims, login)
+func (as *Auth) ListingUsers() ([]users.User, error) {
+	return as.ur.Listing()
 }
 
-func (gs *Auth) AddClaims(claims map[string]string, login string) error {
-	return gs.claims.AddClaims(claims, ctx, login)
+func (as *Auth) DeleteClaims(claims map[string]string, login string) error {
+	return as.claims.DeleteClaims(claims, login)
 }
-func (s *UserService) RefreshToken(ctx context.Context, tokenReqAuth, tokenReqRefresh string) (string, string, error) {
-	token, err := auth.GetTokenAuth(tokenReqAuth)
+
+func (as *Auth) AddClaims(claims map[string]string, login string) error {
+	return as.claims.AddClaims(claims, login)
+}
+
+func (as *Auth) RefreshToken(tokenReqAuth, tokenReqRefresh string) (newToken string, newRefToken string, err error) {
+	cfg := config.Load()
+	token, err := auth.DecryptToken(tokenReqAuth, []byte(cfg.SecretKeyAuth))
 	if err != nil {
-		return "", "", err
+		return
 	}
-	var newToken, newRefToken string
-
-	claims := repository.IntefaceToString(token.Claims.(jwt.MapClaims))
-
-	tokenRefresh, err := auth.GetTokenRefresh(tokenReqRefresh)
+	tokenRefresh, err := auth.DecryptToken(tokenReqRefresh, []byte(cfg.SecretKeyRefresh))
 	if err != nil {
-		return "", "", err
+		return
 	}
 
-	claimsR := repository.IntefaceToString(tokenRefresh.Claims.(jwt.MapClaims))
-
+	claims := auth.InterfaceToString(token.Claims.(jwt.MapClaims))
+	claimsR := auth.InterfaceToString(tokenRefresh.Claims.(jwt.MapClaims))
+	login := claims["login"]
 	if claims["login"] == claimsR["uuid"] {
-
-		user, err := s.users.FindUser(ctx, claims["login"])
-		if err != nil {
-			log.Errorf("User not found when refresh token", err)
-			return "", "", err
-		}
-		refreshToken, err := s.refresh.GetRefreshToken(ctx, claims["login"])
-
-		if ok := s.users.Delete(ctx, claims["login"]); ok != nil {
-			return "", "", ok
-		}
-
-		tm, err := auth.GetExpirationTimeToRefreshToken(refreshToken)
-
-		if time.Now().After(tm) {
+		rToken, err := as.refresh.GetRefreshToken(login)
+		decryptedToken, err := auth.DecryptToken(rToken, []byte(cfg.SecretKeyRefresh))
+		claims := decryptedToken.Claims.(jwt.MapClaims)
+		uniqueIdentifier := uuid.New().String()
+		newToken, err = auth.CreateTokenAuth(claims)
+		if time.Now().Unix() > claims["exp"].(int64) {
 			log.Errorf("Invalid session")
+			newRefToken, err = auth.CreateTokenRefresh(uniqueIdentifier)
 		}
-
-		err = s.users.Create(ctx, user)
 		if err != nil {
 			return "", "", err
 		}
-
-		newClaims, err := s.claims.GetClaims(ctx, claims["login"])
-		if err != nil {
-			return "", "", nil
-		}
-		uuid := guuid.New().String()
-		newToken, err = auth.CreatTokenAuth(claims["login"], newClaims)
-		newRefToken, err = auth.CreatTokenRefresh(uuid)
-		if err != nil {
-			return "", "", err
-		}
-
-		t, err := auth.GetExpirationTimeToRefreshToken(newRefToken)
-		if err != nil {
-			return "", "", err
-		}
-		err = s.refresh.AddRefreshTokens(ctx, claims["login"], repository.NewRefreshToken(newRefToken, &t))
+		err = as.refresh.AddRefreshTokens(login, refreshToken.NewRefreshToken(newRefToken, claims["exp"].(int64)))
 	} else {
-		return "", "", errors.New("not validate in refresh")
+		return "", "", errors.New("Fake refresh token ")
 	}
-
-	return newToken, newRefToken, err
+	return
 }
-func New(usersRepository repository.UsersRepository, tokenRepository repository.RefreshTokenRepository, claims repository.RepositoryOfClaims, config conf.Config) *UserService {
-	return &UserService{
-		users:   &usersRepository,
-		claims:  &claims,
-		refresh: &tokenRepository,
-		cfg:     &config,
-	}
-}
-
-func (s *UserService) SignIn(ctx context.Context, login string, password string) (token string, tokenRefresh string, err error) {
-	user, err := s.users.FindUser(ctx, login)
+func (as *Auth) SignIn(login string, password string) (token string, tokenRefresh string, err error) {
+	user, err := as.ur.Get(login)
 
 	if err != nil {
-		return "", "", err
+		return
 	}
-	if user != nil {
-		if err := repository.VerifyPassword(string(user.Password), password); user.Login == login && err == nil {
-
-			claims, err := s.claims.GetClaims(ctx, login)
-			if err != nil {
-				return "", "", err
-			}
-
-			token, err = auth.CreatTokenAuth(login, claims)
-			if err != nil {
-				return "", "", err
-			}
-
-			tokenRefresh, err = auth.CreatTokenRefresh(login)
-			if err != nil {
-				return "", "", err
-			}
+	if password == user.Password {
+		claims, err := as.claims.GetClaims(login)
+		if err != nil {
+			return "", "", err
 		}
-	} else {
-		return "", "", err
+		token, err = auth.CreateTokenAuth(claims)
+		if err != nil {
+			return "", "", err
+		}
+		tokenRefresh, err = auth.CreateTokenRefresh(login)
+		if err != nil {
+			return "", "", err
+		}
 	}
-
-	return token, tokenRefresh, err
+	return
 }
 
-func (s *UserService) SignUp(ctx context.Context, login string, password string) (string, error) {
-	var err error
-
-	if login == "" || password == "" {
-		return "", errors.New("verify user")
+func (as *Auth) SignUp(user *users.User) error {
+	if user.Login == "" || user.Password == "" {
+		return errors.New("Empty fields!!! ")
 	}
-
-	if s.users.IfExistUser(ctx, login) {
-		return "", fmt.Errorf("enter other login")
+	_, err := as.ur.Get(user.Login)
+	if user == nil || err == nil {
+		return fmt.Errorf("enter other login")
 	}
-
-	resp, err := SendgridMsg(s.cfg.SendGridKey)
-
+	err = as.ur.Create(user)
 	if err != nil {
-		return "", err
+		log.Error(err)
+		return err
 	}
-
-	uuid := guuid.New().String()
-	claims, err := s.claims.GetClaims(ctx, login)
-	if err != nil {
-		return "", nil
-	}
-	token, err := auth.CreatTokenAuth(login, claims)
-	refreshToken, err := auth.CreatTokenRefresh(uuid)
-
-	if err != nil {
-		log.Errorf("token not created in sign up", err)
-		return "", err
-	}
-
-	err = s.users.Create(ctx, &repository.User{
-		Login:    login,
-		Password: repository.Hash(password),
-	})
-
-	if err != nil {
-		return "", err
-	}
-
-	t, err := auth.GetExpirationTimeToRefreshToken(refreshToken)
-	if err != nil {
-		return "", err
-	}
-
-	err = s.refresh.AddRefreshTokens(ctx, login, repository.NewRefreshToken(refreshToken, &t))
-
-	url := fmt.Sprintf("http://localhost:%d/confirm?token=%s", s.cfg.Port, s.cfg.SecretKeyAuth)
-
-	return url, err
+	return nil
 }

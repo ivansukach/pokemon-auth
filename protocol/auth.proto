@@ -25,11 +25,11 @@ message SignInResponse {
 message SignUpRequest {
     string login = 1;
     string password = 2;
+    string name = 3;
+    string surname = 4;
+    int32 coins = 5;
 }
 
-message SignUpResponse {
-    string Url = 1;
-}
 
 message DeleteRequest {
     string login = 1;
@@ -54,7 +54,7 @@ message ValidateToken {
 
 service AuthService {
     rpc SignIn (SignInRequest) returns (SignInResponse);
-    rpc SignUp (SignUpRequest) returns (SignUpResponse);
+    rpc SignUp (SignUpRequest) returns (EmptyResponse);
     rpc DeleteClaims (DeleteClaimsRequest) returns (EmptyResponse);
     rpc Delete (DeleteRequest) returns (EmptyResponse);
     rpc AddClaims (AddClaimsRequest) returns (EmptyResponse);

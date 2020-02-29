@@ -1,16 +1,11 @@
 package refreshToken
 
-import (
-	"context"
-	"time"
-)
-
 type RefreshToken struct {
-	UserId     string    `db:"userid"`
-	Token      string    `db:"token"`
-	Expiration time.Time `db:"expiration"`
+	UserId     string `db:"userid"`
+	Token      string `db:"token"`
+	Expiration int64  `db:"expiration"`
 }
 type Repository interface {
-	AddRefreshTokens(ctx context.Context, login string, token *RefreshToken) error
-	GetRefreshToken(ctx context.Context, login string) (string, error)
+	AddRefreshTokens(login string, token *RefreshToken) error
+	GetRefreshToken(login string) (string, error)
 }
