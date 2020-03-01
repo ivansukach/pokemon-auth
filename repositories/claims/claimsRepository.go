@@ -16,9 +16,8 @@ func NewRepositoryOfClaims(database *sqlx.DB) *RepositoryOfClaims {
 }
 
 func (r *RepositoryOfClaims) GetClaims(login string) (jwt.MapClaims, error) {
-	var err error
 	claims := jwt.MapClaims{}
-	rows, err := r.db.Queryx("SELECT (key, value) FROM claim WHERE userid = $1", login)
+	rows, err := r.db.Queryx("SELECT key, value FROM claim WHERE userid = $1", login)
 	if err != nil {
 		log.Warning(err)
 		return nil, err
@@ -37,7 +36,7 @@ func (r *RepositoryOfClaims) GetClaims(login string) (jwt.MapClaims, error) {
 }
 
 func (r *RepositoryOfClaims) IfExistClaim(key, login string) (bool, error) {
-	rows, err := r.db.Queryx("SELECT (key, value) FROM claim WHERE userid = $1 and key = $2 ", login, key)
+	rows, err := r.db.Queryx("SELECT key, value FROM claim WHERE userid = $1 and key = $2 ", login, key)
 	if err != nil || rows == nil {
 		return false, nil
 	}

@@ -112,6 +112,9 @@ func (as *Auth) SignUp(user *users.User) error {
 		return fmt.Errorf("enter other login")
 	}
 	err = as.ur.Create(user)
+	claims := make(map[string]string, 0)
+	claims["login"] = user.Login
+	err = as.claims.AddClaims(claims, user.Login)
 	if err != nil {
 		log.Error(err)
 		return err

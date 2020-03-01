@@ -11,10 +11,9 @@ import (
 
 func CreateTokenAuth(claims jwt.MapClaims) (string, error) {
 	cfg := config.Load()
-	var err error
 	claims["exp"] = time.Now().Unix() + cfg.AuthTTL
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	t, err := token.SignedString(cfg.SecretKeyAuth)
+	t, err := token.SignedString([]byte(cfg.SecretKeyAuth))
 	if err != nil {
 		log.Error(err)
 		return "", err
@@ -30,7 +29,7 @@ func CreateTokenRefresh(uuid string) (string, error) {
 	rtClaims["uuid"] = uuid
 	rtClaims["exp"] = time.Now().Unix() + cfg.AuthTTL
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
-	rt, err := refreshToken.SignedString(cfg.SecretKeyRefresh)
+	rt, err := refreshToken.SignedString([]byte(cfg.SecretKeyRefresh))
 	if err != nil {
 		log.Error(err)
 		return "", err

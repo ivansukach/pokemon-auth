@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	Port             int    `env:"PORT" envDefault:":1325"`
+	Port             int    `env:"PORT" envDefault:"1325"`
 	AuthGRPCEndpoint string `env:"AuthGRPCEndpoint" envDefault:"localhost:50051"`
 	SecretKeyAuth    string `env:"SecretKeyAuth"`
 	SecretKeyRefresh string `env:"SecretKeyRefresh"`

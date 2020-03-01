@@ -27,7 +27,6 @@ message SignUpRequest {
     string password = 2;
     string name = 3;
     string surname = 4;
-    int32 coins = 5;
 }
 
 

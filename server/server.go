@@ -72,7 +72,7 @@ func (s *Server) SignIn(ctx context.Context, req *protocol.SignInRequest) (*prot
 }
 
 func (s *Server) SignUp(ctx context.Context, req *protocol.SignUpRequest) (*protocol.EmptyResponse, error) {
-	user := users.User{Login: req.Login, Password: req.Password, Name: req.Name, Surname: req.Surname, Coins: req.Coins}
+	user := users.User{Login: req.Login, Password: req.Password, Name: req.Name, Surname: req.Surname, Coins: 10000}
 	err := s.as.SignUp(&user)
 	if err != nil {
 		log.Error(err)
