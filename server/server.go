@@ -63,8 +63,16 @@ func (s *Server) SignIn(ctx context.Context, req *protocol.SignInRequest) (*prot
 		log.Error(err)
 		return nil, err
 	}
-
+	user, err := s.as.GetUser(req.Login)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
 	response := &protocol.SignInResponse{
+		Name:         user.Name,
+		Surname:      user.Surname,
+		Coins:        user.Coins,
+		Photo:        user.Photo,
 		Token:        token,
 		RefreshToken: refresh,
 	}

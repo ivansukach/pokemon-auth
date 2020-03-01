@@ -25,7 +25,7 @@ func (ur *userRepository) Get(login string) (*User, error) {
 }
 func (ur *userRepository) Update(user *User) error {
 	_, err := ur.db.NamedExec("UPDATE users SET (Login=:login, Password=:password"+
-		"Name=:name, Surname=:surname, Coins=:coins) WHERE Login=:login", user)
+		"Name=:name, Surname=:surname, Coins=:coins, Photo=:photo) WHERE Login=:login", user)
 	return err
 }
 func (ur *userRepository) Delete(login string) error {

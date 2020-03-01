@@ -5,6 +5,7 @@ type User struct {
 	Password string `db:"password"`
 	Name     string `db:"name"`
 	Surname  string `db:"surname"`
+	Photo    string `db:"photo"`
 	Coins    int32  `db:"coins"`
 }
 type Repository interface {

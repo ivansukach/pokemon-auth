@@ -18,8 +18,13 @@ message SignInRequest {
 }
 
 message SignInResponse {
-    string token = 1;
-    string refreshToken = 2;
+    string name = 1;
+    string surname = 2;
+    string login = 3;
+    int32 coins = 4;
+    string photo = 5;
+    string token = 6;
+    string refreshToken = 7;
 }
 
 message SignUpRequest {
