@@ -73,6 +73,7 @@ func (s *Server) SignIn(ctx context.Context, req *protocol.SignInRequest) (*prot
 		Surname:      user.Surname,
 		Coins:        user.Coins,
 		Photo:        user.Photo,
+		Login:        user.Login,
 		Token:        token,
 		RefreshToken: refresh,
 	}

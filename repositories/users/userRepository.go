@@ -15,7 +15,7 @@ func New(db *sqlx.DB) Repository {
 }
 
 func (ur *userRepository) Create(user *User) error {
-	_, err := ur.db.NamedExec("INSERT INTO users VALUES (:login, :password, :name, :surname, :coins)", user)
+	_, err := ur.db.NamedExec("INSERT INTO users VALUES (:login, :password, :name, :surname, :coins, :photo)", user)
 	return err
 }
 func (ur *userRepository) Get(login string) (*User, error) {

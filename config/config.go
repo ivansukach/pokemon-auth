@@ -18,8 +18,8 @@ type Config struct {
 func Load() (cfg Config) {
 	cfg.AuthTTL = time.Now().Add(time.Minute*10).Unix() - time.Now().Unix()
 	cfg.RefreshTTL = time.Now().Add(time.Minute*30).Unix() - time.Now().Unix()
-	cfg.SecretKeyAuth = "afrgdrsgfdhdfsgds"
-	cfg.SecretKeyRefresh = "hkogijjdfiouhdfguih"
+	cfg.SecretKeyAuth = "blabla"
+	cfg.SecretKeyRefresh = "blablabla"
 	if err := env.Parse(&cfg); err != nil {
 		log.Printf("%+v\n", err)
 	}
